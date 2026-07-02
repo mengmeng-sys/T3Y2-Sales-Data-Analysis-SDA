@@ -6,6 +6,7 @@ import pandas as pd
 # Import our modules
 import data_cleaning as dc
 import analysis as analysis
+import visualization as viz
 
 print("="*50)
 print("SALES DATA ANALYSIS PROJECT")
@@ -35,6 +36,18 @@ analysis.find_best_products(clean_df)
 analysis.analyze_sales_over_time(clean_df)
 analysis.find_insights(clean_df)
 
+# Step 3: Create Visualizations
+print("\n📊 STEP 3: DATA VISUALIZATION")
+print("-"*50)
+
+# Load data for visualization
+viz_df = viz.load_data()
+viz.create_bar_chart(viz_df)
+viz.create_line_chart(viz_df)
+viz.create_pie_chart(viz_df)
+viz.create_histogram(viz_df)
+
 print("\n" + "="*50)
-print("✅ Project Analysis Complete!")
+print("✅ Project Complete!")
+print("📁 All charts saved in the 'data' folder")
 print("="*50)

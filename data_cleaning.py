@@ -32,7 +32,6 @@ def display_initial_info(df):
      #Duplicates
      
      print(f"\n4. Duplicate Rows: {df.duplicated().sum()}")
-import pandas as pd
 
 def clean_data(df):
     """
