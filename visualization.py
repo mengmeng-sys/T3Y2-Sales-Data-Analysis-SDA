@@ -1,225 +1,253 @@
-# visualization.py
-# This file creates all our charts and graphs
-# We'll use matplotlib to make professional-looking visuals
+# ===== visualization.py =====
+# PURPOSE: Create 4 types of charts from the cleaned sales data and save them as PNG images.
+#          Charts help us SEE patterns that are hard to spot in raw numbers.
+#
+# CHARTS CREATED:
+#   1. bar_charts.png   - Horizontal bar charts (top products + category revenue)
+#   2. line_chart.png   - Daily sales trend with moving average
+#   3. pie_chart.png    - Revenue distribution by category
+#   4. histograms.png   - Distribution of prices and order quantities
+#
+# OUTPUT: All PNG files are saved to the 'data/' folder.
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
-# Set a nice style for our charts
+import pandas as pd               # for DataFrames
+import matplotlib.pyplot as plt   # the main charting library
+import numpy as np                # for math operations
+
+# Set a visual style for all charts (dark grid background, nice colors)
 plt.style.use('seaborn-v0_8-darkgrid')
 
+
 def load_data():
-    """
-    Load the cleaned dataset
-    """
+    """Read the cleaned CSV file and convert Date to datetime."""
     df = pd.read_csv('data/sales_cleaned.csv')
     df['Date'] = pd.to_datetime(df['Date'])
     return df
 
+
+# ================================================
+# CHART 1: BAR CHARTS (2 side by side)
+#
+# Left chart:  Top 10 products by total revenue
+# Right chart: Revenue by category (Drink, Food, Household)
+#
+# Horizontal bars are used because product names are text
+# and easier to read when laid out horizontally.
+# ================================================
 def create_bar_chart(df):
-    """
-    Create bar charts to compare product and category performance
-    These help us see what's selling best
-    """
-    print("\n📊 Creating Bar Charts...")
-    
-    # Create figure with 2 subplots (1 row, 2 columns)
+    print("\nCreating Bar Charts...")
+
+    # --- CREATE A FIGURE WITH 2 SUBPLOTS ---
+    # subplots(1, 2) = 1 row, 2 columns of charts side by side
+    # figsize=(14, 6) = width=14 inches, height=6 inches
+    # ax1 = left chart, ax2 = right chart
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    
-    # Chart 1: Top 10 Products by Revenue
-    product_revenue = df.groupby('Product')['TotalSales'].sum().sort_values(ascending=True).tail(10)
-    
-    # Create horizontal bar chart (easier to read with long names)
-    ax1.barh(product_revenue.index, product_revenue.values, color='skyblue')
+
+    # ---- LEFT CHART: Top 10 Products by Revenue ----
+    # Group by Product, sum the TotalSales, sort ascending, take last 10 (highest)
+    prod_rev = df.groupby('Product')['TotalSales'].sum().sort_values(ascending=True).tail(10)
+
+    # barh() = horizontal bar chart (bars go left-to-right)
+    # index = product names (y-axis), values = revenue amounts (x-axis)
+    ax1.barh(prod_rev.index, prod_rev.values, color='skyblue')
     ax1.set_xlabel('Total Revenue ($)')
     ax1.set_title('Top 10 Products by Revenue', fontsize=14, fontweight='bold')
-    ax1.grid(axis='x', alpha=0.3)
-    
-    # Add value labels on the bars
-    for i, v in enumerate(product_revenue.values):
+    ax1.grid(axis='x', alpha=0.3)  # grid lines only on x-axis, semi-transparent
+
+    # Add dollar labels at the end of each bar
+    for i, v in enumerate(prod_rev.values):
         ax1.text(v + 5, i, f'${v:,.0f}', va='center', fontsize=9)
-    
-    # Chart 2: Revenue by Category
-    category_revenue = df.groupby('Category')['TotalSales'].sum().sort_values(ascending=True)
-    
-    # Colors for different categories
-    colors = ['#ff9999', '#66b3ff', '#99ff99']
-    bars = ax2.barh(category_revenue.index, category_revenue.values, color=colors)
+
+    # ---- RIGHT CHART: Revenue by Category ----
+    cat_rev = df.groupby('Category')['TotalSales'].sum().sort_values(ascending=True)
+    colors = ['#ff9999', '#66b3ff', '#99ff99']  # pink, blue, green
+    ax2.barh(cat_rev.index, cat_rev.values, color=colors)
     ax2.set_xlabel('Total Revenue ($)')
     ax2.set_title('Revenue by Category', fontsize=14, fontweight='bold')
     ax2.grid(axis='x', alpha=0.3)
-    
-    # Add value labels
-    for i, v in enumerate(category_revenue.values):
+
+    for i, v in enumerate(cat_rev.values):
         ax2.text(v + 5, i, f'${v:,.0f}', va='center', fontsize=10)
-    
-    # Adjust layout and save
+
+    # Adjust spacing so nothing overlaps, then save
     plt.tight_layout()
     plt.savefig('data/bar_charts.png', dpi=300, bbox_inches='tight')
-    print("   ✅ Saved bar charts as 'data/bar_charts.png'")
+    print("   Saved bar charts as 'data/bar_charts.png'")
     plt.show()
 
+
+# ================================================
+# CHART 2: LINE CHART (Daily Sales Trend)
+#
+# Shows how sales change from day to day over 60 days.
+# Key features:
+#   - Blue line with dots = actual daily sales
+#   - Red dashed line = 7-day moving average (smooths out daily noise)
+#   - Green arrow annotation = the day with highest sales
+# ================================================
 def create_line_chart(df):
-    """
-    Create a line chart showing sales trends over time
-    This helps us see patterns and seasonality
-    """
-    print("\n📈 Creating Line Chart...")
-    
-    # Calculate daily sales
+    print("\nCreating Line Chart...")
+
+    # Group sales by date and sum them up (one value per day)
     daily_sales = df.groupby('Date')['TotalSales'].sum()
-    
-    # Create figure
+
     plt.figure(figsize=(12, 6))
-    
-    # Plot daily sales
-    plt.plot(daily_sales.index, daily_sales.values, 
+
+    # Plot actual daily sales as a line with circle markers
+    plt.plot(daily_sales.index, daily_sales.values,
              marker='o', linewidth=2, markersize=4, color='#2E86AB')
-    
-    # Add a trend line (moving average)
-    window = 7  # 7-day moving average
-    moving_avg = daily_sales.rolling(window=window).mean()
-    plt.plot(daily_sales.index, moving_avg, 
-             linewidth=3, color='red', linestyle='--', 
-             label=f'{window}-Day Moving Average')
-    
-    # Customize the chart
+
+    # --- Moving Average (Trend Line) ---
+    # rolling(window=7) takes a 7-day window and calculates the average.
+    # This smooths out the zig-zags so we can see the overall trend.
+    moving_avg = daily_sales.rolling(window=7).mean()
+    plt.plot(daily_sales.index, moving_avg,
+             linewidth=3, color='red', linestyle='--', label='7-Day Moving Average')
+
+    # Chart labels and styling
     plt.title('Daily Sales Trend', fontsize=16, fontweight='bold')
     plt.xlabel('Date', fontsize=12)
     plt.ylabel('Total Sales ($)', fontsize=12)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    # Format x-axis dates
-    plt.xticks(rotation=45)
-    
-    # Add some annotations
+    plt.legend()               # show the legend (identifies the red line)
+    plt.grid(True, alpha=0.3)  # light grid
+    plt.xticks(rotation=45)    # tilt date labels so they don't overlap
+
+    # --- Annotation: Highest Sales Day ---
+    # idxmax() finds the date with the maximum value
     max_date = daily_sales.idxmax()
-    max_value = daily_sales.max()
-    plt.annotate(f'Highest: ${max_value:.0f}', 
-                 xy=(max_date, max_value),
-                 xytext=(max_date, max_value + 10),
+    plt.annotate(f'Highest: ${daily_sales.max():.0f}',
+                 xy=(max_date, daily_sales.max()),       # point to this location
+                 xytext=(max_date, daily_sales.max() + 10),  # text placed slightly above
                  arrowprops=dict(arrowstyle='->', color='green'),
                  fontsize=10)
-    
-    # Save the chart
+
     plt.tight_layout()
     plt.savefig('data/line_chart.png', dpi=300, bbox_inches='tight')
-    print("   ✅ Saved line chart as 'data/line_chart.png'")
+    print("   Saved line chart as 'data/line_chart.png'")
     plt.show()
 
+
+# ================================================
+# CHART 3: PIE CHART (Revenue Distribution by Category)
+#
+# Shows what percentage of total revenue comes from each category.
+# Each slice = one category (Drink, Food, Household).
+# The legend also shows the actual dollar amount.
+# ================================================
 def create_pie_chart(df):
-    """
-    Create a pie chart showing revenue distribution by category
-    This helps us see the proportion of each category
-    """
-    print("\n🥧 Creating Pie Chart...")
-    
-    # Calculate revenue by category
-    category_revenue = df.groupby('Category')['TotalSales'].sum()
-    
-    # Create figure
+    print("\nCreating Pie Chart...")
+
+    cat_rev = df.groupby('Category')['TotalSales'].sum()
+
     plt.figure(figsize=(10, 8))
-    
-    # Colors and explode (slightly separate slices)
-    colors = ['#ff9999', '#66b3ff', '#99ff99']
-    explode = (0.05, 0.05, 0.05)  # Slightly separate all slices
-    
-    # Create pie chart
-    plt.pie(category_revenue.values, 
-            labels=category_revenue.index,
-            colors=colors,
-            explode=explode,
-            autopct='%1.1f%%',  # Show percentages with 1 decimal
+
+    # --- PIE CHART SETTINGS ---
+    # autopct='%1.1f%%' shows percentage with 1 decimal (e.g., "33.3%")
+    # explode=(0.05, 0.05, 0.05) = pull each slice slightly apart (for visual effect)
+    # startangle=90 = first slice starts at the top
+    # shadow=True = adds a drop shadow
+    plt.pie(cat_rev.values,
+            labels=cat_rev.index,
+            colors=['#ff9999', '#66b3ff', '#99ff99'],  # pink, blue, green
+            explode=(0.05, 0.05, 0.05),
+            autopct='%1.1f%%',
             startangle=90,
             shadow=True,
             textprops={'fontsize': 14})
-    
-    # Add title
+
     plt.title('Revenue Distribution by Category', fontsize=16, fontweight='bold')
-    
-    # Add a legend with actual values
-    legend_labels = [f'{cat}: ${val:,.0f}' for cat, val in category_revenue.items()]
-    plt.legend(legend_labels, loc='upper right', fontsize=10)
-    
-    # Make it a circle (not an oval)
+
+    # Legend with category name + dollar amount
+    plt.legend([f'{c}: ${v:,.0f}' for c, v in cat_rev.items()],
+               loc='upper right', fontsize=10)
+
+    # axis('equal') makes the pie a perfect circle (not an oval)
     plt.axis('equal')
-    
-    # Save the chart
+
     plt.tight_layout()
     plt.savefig('data/pie_chart.png', dpi=300, bbox_inches='tight')
-    print("   ✅ Saved pie chart as 'data/pie_chart.png'")
+    print("   Saved pie chart as 'data/pie_chart.png'")
     plt.show()
 
+
+# ================================================
+# CHART 4: HISTOGRAMS (2 side by side)
+#
+# A histogram shows how data is DISTRIBUTED.
+#   - x-axis = value buckets (bins)
+#   - y-axis = how many times that value appears (frequency)
+#
+# Left:  Distribution of Unit Prices (most products are cheap?)
+# Right: Distribution of Order Quantities (most people buy 1 item?)
+#
+# Vertical lines show the MEAN (red dashed) and MEDIAN (green dashed).
+# If mean and median are close, the data is fairly balanced.
+# ================================================
 def create_histogram(df):
-    """
-    Create a histogram showing the distribution of Unit Prices
-    This helps us understand price ranges and patterns
-    """
-    print("\n📊 Creating Histogram...")
-    
-    # Create figure with 2 subplots
+    print("\nCreating Histogram...")
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    
-    # Histogram 1: Price Distribution
+
+    # ---- LEFT HISTOGRAM: Price Distribution ----
+    # bins=20 means 20 buckets spanning the price range
     ax1.hist(df['UnitPrice'], bins=20, color='#2E86AB', edgecolor='black', alpha=0.7)
     ax1.set_title('Distribution of Product Prices', fontsize=14, fontweight='bold')
-    ax1.set_xlabel('Unit Price ($)', fontsize=12)
-    ax1.set_ylabel('Frequency', fontsize=12)
+    ax1.set_xlabel('Unit Price ($)')
+    ax1.set_ylabel('Frequency')
     ax1.grid(True, alpha=0.3)
-    
-    # Add vertical lines for mean and median
-    mean_price = df['UnitPrice'].mean()
-    median_price = df['UnitPrice'].median()
-    ax1.axvline(mean_price, color='red', linestyle='--', linewidth=2, label=f'Mean: ${mean_price:.2f}')
-    ax1.axvline(median_price, color='green', linestyle='--', linewidth=2, label=f'Median: ${median_price:.2f}')
+
+    # Add a vertical red dashed line for the MEAN (average) price
+    ax1.axvline(df['UnitPrice'].mean(), color='red', linestyle='--', linewidth=2,
+                label=f'Mean: ${df["UnitPrice"].mean():.2f}')
+    # Add a vertical green dashed line for the MEDIAN (middle) price
+    ax1.axvline(df['UnitPrice'].median(), color='green', linestyle='--', linewidth=2,
+                label=f'Median: ${df["UnitPrice"].median():.2f}')
     ax1.legend()
-    
-    # Histogram 2: Quantity Distribution
+
+    # ---- RIGHT HISTOGRAM: Quantity Distribution ----
     ax2.hist(df['Quantity'], bins=10, color='#A23B72', edgecolor='black', alpha=0.7)
     ax2.set_title('Distribution of Order Sizes', fontsize=14, fontweight='bold')
-    ax2.set_xlabel('Quantity per Transaction', fontsize=12)
-    ax2.set_ylabel('Frequency', fontsize=12)
+    ax2.set_xlabel('Quantity per Transaction')
+    ax2.set_ylabel('Frequency')
     ax2.grid(True, alpha=0.3)
-    
-    # Add vertical lines for mean and median
-    mean_qty = df['Quantity'].mean()
-    median_qty = df['Quantity'].median()
-    ax2.axvline(mean_qty, color='red', linestyle='--', linewidth=2, label=f'Mean: {mean_qty:.1f}')
-    ax2.axvline(median_qty, color='green', linestyle='--', linewidth=2, label=f'Median: {median_qty:.0f}')
+
+    ax2.axvline(df['Quantity'].mean(), color='red', linestyle='--', linewidth=2,
+                label=f'Mean: {df["Quantity"].mean():.1f}')
+    ax2.axvline(df['Quantity'].median(), color='green', linestyle='--', linewidth=2,
+                label=f'Median: {df["Quantity"].median():.0f}')
     ax2.legend()
-    
-    # Adjust layout and save
+
     plt.tight_layout()
     plt.savefig('data/histograms.png', dpi=300, bbox_inches='tight')
-    print("   ✅ Saved histograms as 'data/histograms.png'")
+    print("   Saved histograms as 'data/histograms.png'")
     plt.show()
 
+
+# ================================================
+# ORCHESTRATOR: create_all_visualizations()
+# Calls every chart function in order.
+# ================================================
 def create_all_visualizations():
-    """
-    Create all visualizations
-    This is the main function we'll call
-    """
+    """Generate all 4 chart types and save them as PNG files."""
     print("="*50)
-    print("📊 CREATING VISUALIZATIONS")
+    print("CREATING VISUALIZATIONS")
     print("="*50)
-    
-    # Load data
+
     df = load_data()
     print(f"\nCreating charts from {len(df)} records...")
-    
-    # Create all charts
+
     create_bar_chart(df)
     create_line_chart(df)
     create_pie_chart(df)
     create_histogram(df)
-    
+
     print("\n" + "="*50)
-    print(" All visualizations created!")
-    print(" Check the 'data' folder for your charts")
+    print("All visualizations created!")
+    print("Check the 'data' folder for your charts")
     print("="*50)
 
-# This runs when we execute this file directly
+
+# When run directly, create all visualizations
 if __name__ == "__main__":
     create_all_visualizations()

@@ -1,0 +1,10 @@
+MODEL PERFORMANCE METRICS
+========================
+
+Mean Absolute Error (MAE): $3.94
+Mean Squared Error (MSE): $31.35
+Root Mean Squared Error (RMSE): $5.60
+R² Score: 0.8735 (87.3%)
+
+Interpretation:
+Excellent model! Good for predictions.
